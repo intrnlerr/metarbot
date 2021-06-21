@@ -1,0 +1,19 @@
+{
+  "name": "metarbot",
+  "version": "1.0.0",
+  "description": "discord bot that gets metars from awc",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "intlll",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/intrnlerr/metarbot.git"
+  },
+  "dependencies": {
+    "discord.js": "^12.5.3",
+    "xml2js": "^0.4.23"
+  }
+}
