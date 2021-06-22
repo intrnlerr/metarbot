@@ -34,21 +34,24 @@ function startbot(token) {
         if (msg.content.startsWith('!atis')) {
             // get
             let arg = msg.content.substring(5).trim()
-            if (arg === '' || arg.length < 4) {
+            if (arg === '') {
                 return
             }
             getmetar(arg, (codes) => {
-                let text = []
                 if (codes.$.num_results == 0) {
                     msg.channel.send('invalid icao')
                     return
                 }
+                let segment = ''
                 codes.METAR.forEach(metar => {
-                    console.log(metar)
-                    text.push(metar.raw_text)
+                    if (segment.length + metar.raw_text.length > 1000) {
+                        // new segment
+                        msg.channel.send('```' + segment + '```')
+                        segment = ''
+                    }
+                    segment += metar.raw_text + '\n'
                 });
-                console.log(text)
-                msg.channel.send('```' + text.join('\n') + '```')
+                msg.channel.send('```' + segment + '```')
             })
         }
     })
