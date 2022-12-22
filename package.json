@@ -13,7 +13,7 @@
     "url": "https://github.com/intrnlerr/metarbot.git"
   },
   "dependencies": {
-    "discord.js": "^12.5.3",
+    "discord.js": "^14.7.1",
     "xml2js": "^0.4.23"
   }
 }

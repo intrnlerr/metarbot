@@ -6,7 +6,7 @@ const metarurl = 'https://www.aviationweather.gov/adds/dataserver_current/httppa
 function getmetar(icao, cb) {
     https.get(metarurl + icao, (resp) => {
         // parse xml
-        
+
         let s = ''
         resp.on('data', (data) => {
             s += data
@@ -18,18 +18,56 @@ function getmetar(icao, cb) {
                 }
                 cb(result.response.data[0])
             })
-            
+
         })
     })
 }
 
-function startbot(token) {
-    const client = new dc.Client()
+function startbot(token, appid) {
+    // do a thing
+    {
+        let json = new SlashCommandBuilder()
+        .setName("atis")
+        .setDescription("metar")
+        .addStringOption(
+            (option) => option
+            .setName("input")
+            .setDescription("airport(s) to")
+            .setRequired(true)
+        ).toJSON()
+        const { REST, Routes } = require('discord.js');
+        const rest = new REST({ version: 10 }).setToken(token)
+        rest.put(Routes.applicationCommands(appid), { body: [json] })
+    }
+    const client = new dc.Client({ intents: [] })
     client.on('ready', () => {
         console.log('owned')
     })
-
-    client.on('message', async (msg) => {
+    client.on(dc.Events.InteractionCreate, interaction => {
+        if (interaction.commandName === "atis") {
+            let arg = interaction.options.get('input'); 
+            if (arg.value === '') {
+                return
+            }
+            getmetar(arg.value, (codes) => {
+                if (codes.$.num_results == 0) {
+                    interaction.reply('no results')
+                    return
+                }
+                let segment = ''
+                codes.METAR.forEach(metar => {
+                    if (segment.length + metar.raw_text.length > 1000) {
+                        // new segment
+                        interaction.reply('```' + segment + '```')
+                        segment = ''
+                    }
+                    segment += metar.raw_text + '\n'
+                });
+                interaction.reply('```' + segment + '```')
+            })
+        }
+    })
+    client.on('messageCreate', async (msg) => {
         // check if message 
         if (msg.content.startsWith('!atis')) {
             // get
@@ -39,7 +77,7 @@ function startbot(token) {
             }
             getmetar(arg, (codes) => {
                 if (codes.$.num_results == 0) {
-                    msg.channel.send('invalid icao')
+                    msg.channel.send('no results')
                     return
                 }
                 let segment = ''
@@ -56,12 +94,17 @@ function startbot(token) {
         }
     })
 
-    client.login(token)
+    client.login(token).catch((err) => {
+        console.error("login error:", err)
+    }).then((ok) => {
+        console.log('success i think')
+    })
 }
 
 // read config
 
 const fs = require('fs')
+const { SlashCommandBuilder } = require('discord.js')
 fs.open('config.json', (err, f) => {
     if (err) {
         if (err.code === 'ENOENT') {
@@ -70,7 +113,7 @@ fs.open('config.json', (err, f) => {
                 if (err) {
                     throw err
                 }
-                fs.write(fd, '{"token":"token here"}', (err) => {
+                fs.write(fd, '{"token":"token here","appid":"appid here"}', (err) => {
                     if (err) {
                         throw err
                     }
@@ -88,7 +131,7 @@ fs.open('config.json', (err, f) => {
             throw err
         }
         let config = JSON.parse(data.toString('utf8', 0, n))
-        startbot(config.token)
+        startbot(config.token, config.appid)
     })
 })
 
